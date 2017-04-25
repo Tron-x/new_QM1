@@ -23,7 +23,7 @@ static void usage() {
   cerr << "  -t, --ouput_torque     output file" << endl;
 
   cerr << "Example:" << endl;
-  cerr << "  qm -d database -i random -e energy.txt -f force.txt -t torque.txt"
+  cerr << "  qm -d grid.dat -i random -e energy.txt -f force.txt -t torque.txt"
        << endl;
 
   exit(1);

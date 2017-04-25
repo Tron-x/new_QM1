@@ -302,27 +302,60 @@ class Grid {
     if (size == 1) return ys[0];
     if (size == 2) {
       double x0 = xs[0], x1 = xs[1];
-      vector<double> y0 = ys[0], y1 = ys[1];
-      return y0 + (my_x - x0) * (y1 - y0) / (x1 - x0);
+      const vector<double>& y0 = ys[0];
+      const vector<double>& y1 = ys[1];
+      double x01 = x1 - x0;
+      double m0 = my_x - x0;
+      vector<double> rst(7);
+      for (size_t i = 0; i < 7; i++) {
+        rst[i] = y0[i] + m0 * (y1[i] - y0[i]) / x01;
+      }
+      return rst;
     }
     if (size == 3) {
       double x0 = xs[0], x1 = xs[1], x2 = xs[2];
-      vector<double> y0 = ys[0], y1 = ys[1], y2 = ys[2];
-      vector<double> a1 = (y1 - y0) / (x1 - x0);
-      vector<double> a2 = (y2 - y0 - a1 * (x2 - x0)) / (x2 - x0) / (x2 - x1);
-      return y0 + a1 * (my_x - x0) + a2 * (my_x - x0) * (my_x - x1);
+      const vector<double>& y0 = ys[0];
+      const vector<double>& y1 = ys[1];
+      const vector<double>& y2 = ys[2];
+      vector<double> rst(7);
+      double x01 = x1 - x0;
+      double x02 = x2 - x0;
+      double x12 = x2 - x1;
+      double m0 = my_x - x0;
+      double m1 = my_x - x1;
+      double a1, a2;
+      for (size_t i = 0; i < 7; i++) {
+          a1 = (y1[i] - y0[i]) / x01;
+          a2 = (y2[i] - y0[i] - a1 * x02) / x02 / x12;
+          rst[i] = y0[i] + a1 * m0 + a2 * m0 * m1;
+      }
+      return rst;
     }
 
     if (size == 4) {
       double x0 = xs[0], x1 = xs[1], x2 = xs[2], x3 = xs[3];
-      vector<double> y0 = ys[0], y1 = ys[1], y2 = ys[2], y3 = ys[3];
-      vector<double> a1 = (y1 - y0) / (x1 - x0);
-      vector<double> a2 = (y2 - y0 - a1 * (x2 - x0)) / (x2 - x0) / (x2 - x1);
-      vector<double> a3 =
-          (y3 - y0 - a1 * (x3 - x0) - a2 * (x3 - x0) * (x3 - x1)) / (x3 - x0) /
-          (x3 - x1) / (x3 - x2);
-      return y0 + a1 * (my_x - x0) + a2 * (my_x - x0) * (my_x - x1) +
-             a3 * (my_x - x0) * (my_x - x1) * (my_x - x2);
+      const vector<double>& y0 = ys[0];
+      const vector<double>& y1 = ys[1];
+      const vector<double>& y2 = ys[2];
+      const vector<double>& y3 = ys[3];
+      vector<double> rst(7);
+      double x01 = x1 - x0;
+      double x02 = x2 - x0;
+      double x03 = x3 - x0;
+      double x12 = x2 - x1;
+      double x13 = x3 - x1;
+      double x23 = x3 - x2;
+      double m0 = my_x - x0;
+      double m1 = my_x - x1;
+      double m2 = my_x - x2;
+      double a1, a2, a3;
+      for (size_t i = 0; i < 7; i++) {
+        a1 = (y1[i] - y0[i]) / x01;
+        a2 = (y2[i] - y0[i] - a1 * x02) / x02 / x12;
+        a3 = (y3[i] - y0[i] - a1 * x03 - a2 * x03 * x13) / x03 / x13 / x23;
+        rst[i] = y0[i] + a1 * m0 + a2 * m0 * m1 + a3 * m0 * m1 * m2;
+      }
+      return rst;
     }
   }
   /**
