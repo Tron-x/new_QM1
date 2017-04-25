@@ -216,14 +216,14 @@ class Grid {
         break;
     }
 
-    vector<double> xs;
-    vector<vector<double>> ys;
-    for (int i : neighbors) {
-      xs.push_back(node->xs[i]);
-      ys.push_back(interpolate_help(coor_tmp, node->next[i], order));
+    vector<double> xs(4);
+    vector<vector<double>> ys(4);
+    for (size_t i = 0; i < neighbors.size(); i++) {
+      xs[i] = node->xs[neighbors[i]];
+      ys[i] = interpolate_help(coor_tmp, node->next[neighbors[i]], order);
     }
 
-    vector<double> my_y = interp_1D(xs, ys, my_x);
+    vector<double> my_y = interp_1D(xs, ys, my_x, neighbors.size());
     return my_y;
   }
 
@@ -297,8 +297,8 @@ class Grid {
   }
 
   vector<double> interp_1D(const vector<double>& xs,
-                           const vector<vector<double>>& ys, double my_x) {
-    int size = xs.size();
+                           const vector<vector<double>>& ys, double my_x,
+                           size_t size) {
     if (size == 1) return ys[0];
     if (size == 2) {
       double x0 = xs[0], x1 = xs[1];
