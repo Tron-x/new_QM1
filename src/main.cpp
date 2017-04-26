@@ -5,8 +5,10 @@
 #include <time.h>
 
 #include "eft_calculator.hpp"
+#include "test.h"
 
 using std::string;
+
 
 static void usage() {
   using std::cerr;
@@ -16,6 +18,7 @@ static void usage() {
        << endl;
   cerr << "Usage: qm [option]" << endl;
   cerr << "Options:" << endl;
+  cerr << "  -o, --order  the order of the interpolant" << endl;
   cerr << "  -d, --database  the database file(gz file)" << endl;
   cerr << "  -i, --input     input dir which contains .inp files" << endl;
   cerr << "  -e, --ouput_energy     output file" << endl;
@@ -23,13 +26,14 @@ static void usage() {
   cerr << "  -t, --ouput_torque     output file" << endl;
 
   cerr << "Example:" << endl;
-  cerr << "  qm -d grid.dat -i random -e energy.txt -f force.txt -t torque.txt"
+  cerr << "  qm -o 2 -d grid.dat -i random -e energy.txt -f force.txt -t torque.txt"
        << endl;
 
   exit(1);
 }
 
 int main(int argc, char* argv[]) {
+  int order;
   string database_file;
   string input_dir;
   string output_energy_file;
@@ -42,6 +46,7 @@ int main(int argc, char* argv[]) {
   int c;
   static struct option loptions[] = {
       {"help", no_argument, NULL, 'h'},
+      {"order", required_argument, NULL, 'o'},
       {"database", required_argument, NULL, 'd'},
       {"input", required_argument, NULL, 'i'},
       {"ouput_energy", required_argument, NULL, 'e'},
@@ -50,8 +55,10 @@ int main(int argc, char* argv[]) {
       {"ouput", required_argument, NULL, 'o'},
       {NULL, 0, NULL, 0}};
 
-  while ((c = getopt_long(argc, argv, "h?d:i:e:f:t:?", loptions, NULL)) != -1) {
+  while ((c = getopt_long(argc, argv, "h?o:d:i:e:f:t:?", loptions, NULL)) != -1) {
     switch (c) {
+      case 'o':
+        order = std::stoi(optarg);
       case 'd':
         database_file = optarg;
         break;
@@ -80,10 +87,9 @@ int main(int argc, char* argv[]) {
     usage();
   }
 
-  qm::EFTCalculator calculator(2);
+  qm::EFTCalculator calculator(order);
   calculator.setup(database_file.c_str());
   start = clock();
-  qm::QMInterpolation interpolation(calculator);
 
   auto dir = opendir(input_dir.c_str());
   assert(dir != nullptr);
@@ -96,11 +102,13 @@ int main(int argc, char* argv[]) {
     int len = std::strlen(entity->d_name);
     if (entity->d_type == DT_REG && len >= 4 &&
         strcmp(entity->d_name + len - 4, ".inp") == 0) {
-      auto res =
-          interpolation.process(input_dir + "/" + std::string(entity->d_name));
-      fprintf(fp_energy_out, "%s\n", res[0].c_str());
-      fprintf(fp_force_out, "%s\n", res[1].c_str());
-      fprintf(fp_torque_out, "%s\n", res[2].c_str());
+      string filename = input_dir + "/" + std::string(entity->d_name);
+      auto eft = test_inp(filename, calculator);
+      fprintf(fp_energy_out, "%s %12.7f", filename.c_str(), eft[0]);
+      fprintf(fp_force_out, "%s %12.7f %12.7f %12.7f", filename.c_str(), eft[1], eft[2],
+              eft[3]);
+      fprintf(fp_torque_out, "%s %12.7f %12.7f %12.7f", filename.c_str(), eft[4], eft[5],
+              eft[6]);
     }
 
     entity = readdir(dir);
