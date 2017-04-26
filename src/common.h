@@ -13,6 +13,7 @@
 #include <functional>
 #include <string>
 #include <sstream>
+#include <iostream>
 
 using std::vector;
 using std::string;
@@ -112,39 +113,6 @@ double angle(const vector<double>& vec1, const vector<double>& vec2) {
 }
 
 //////////////////////////////helper function////////////////
-template <typename Out>
-void split(const string& s, char delim, Out result) {
-  stringstream ss;
-  ss.str(s);
-  string item;
-  while (getline(ss, item, delim)) {
-    *(result++) = item;
-  }
-}
-
-vector<string> split(const string& s, char delim) {
-  vector<string> elems;
-  split(s, delim, back_inserter(elems));
-  return elems;
-}
-
-vector<string> tokenizer(const string& s, char delim) {
-  const char* str = s.c_str();
-  vector<string> result;
-  do {
-    const char* begin = str;
-
-    while (*str != delim && *str) str++;
-
-    result.push_back(string(begin, str));
-
-    // skip delim
-    while (*str == delim) str++;
-  } while (0 != *str);
-
-  return result;
-}
-
 // trim from start (in place)
 static inline void ltrim(std::string& s) {
   s.erase(s.begin(),
@@ -176,6 +144,45 @@ static inline std::string rtrimmed(std::string s) {
   rtrim(s);
   return s;
 }
+
+template <typename Out>
+void split(string s, Out result) {
+  string item;
+  string::iterator pos;
+
+  trim(s);
+  while (s.size()) {
+    pos = std::find_if(s.begin(), s.end(), std::ptr_fun<int, int>(std::isspace));
+    item = string(s.begin(), pos);
+    *(result++) = item;
+    s = string(pos, s.end());
+    ltrim(s);
+  }
+}
+
+vector<string> split(const string& s) {
+  vector<string> elems;
+  split(s, back_inserter(elems));
+  return elems;
+}
+
+vector<string> tokenizer(const string& s, char delim) {
+  const char* str = s.c_str();
+  vector<string> result;
+  do {
+    const char* begin = str;
+
+    while (*str != delim && *str) str++;
+
+    result.push_back(string(begin, str));
+
+    // skip delim
+    while (*str == delim) str++;
+  } while (0 != *str);
+
+  return result;
+}
+
 
 }  // common
 
