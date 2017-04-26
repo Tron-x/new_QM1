@@ -20,6 +20,9 @@ using std::array;
 
 using namespace common;
 
+typedef array<double, 7> data_t;
+
+
 /**
 * A structure for a grid that discretizes six dimensions one by one.
 * The six dimensions are in the sequence of R, PHI, THETA for the
@@ -29,7 +32,7 @@ using namespace common;
 */
 struct Node {
   vector<double> xs;
-  vector<double> y;
+  data_t y;
   vector<Node*> next;
 
   explicit Node(const vector<double>& _xs = {}) : xs(_xs) {}
@@ -126,21 +129,21 @@ class Grid {
       //! Second is ORIPRM
       //! Third is RS
       std::getline(ifs, line);
-      auto fields = common::split(line, '\t');
+      auto fields = common::split(line);
       assert(fields[0] == "ANGPRM" && fields.size() == 5);
       for (size_t idx = 1; idx < fields.size(); ++idx) {
         m_ang_params[idx-1] = std::stod(fields[idx]);
       }
 
       std::getline(ifs, line);
-      fields = common::split(line, '\t');
+      fields = common::split(line);
       assert(fields[0] == "ORIPRM" && fields.size() == 5);
       for (size_t idx = 1; idx < fields.size(); ++idx) {
         m_ori_params[idx-1] = std::stod(fields[idx]);
       }
 
       std::getline(ifs, line);
-      fields = common::split(line, '\t');
+      fields = common::split(line);
       assert(fields[0] == "RS");
       m_rs.clear();
       for (size_t idx = 1; idx < fields.size(); ++idx) {
@@ -153,7 +156,7 @@ class Grid {
     }
   }
 
-  vector<double> interpolate(const vector<double>& coor, int order = 2) {
+  data_t interpolate(const vector<double>& coor, int order = 2) {
     return interpolate_help(coor, m_head_node, order);
   }
 
@@ -176,10 +179,10 @@ class Grid {
       if (line == "") {
         return;
       }
-      auto fields = common::split(line, '\t');
+      auto fields = common::split(line);
       assert(fields.size() == 7);
-      for (auto&& field : fields) {
-        head->y.push_back(std::stod(field));
+      for (size_t i = 0; i < 7; i++) {
+        head->y[i] = std::stod(fields[i]);
       }
     }
     int idx = 0;
@@ -191,7 +194,7 @@ class Grid {
     }
   }
 
-  vector<double> interpolate_help(const vector<double>& coor, Node* node,
+  data_t interpolate_help(const vector<double>& coor, Node* node,
                                   int order = 2) {
     if (node->next.empty()) {
       return node->y;
@@ -200,38 +203,42 @@ class Grid {
     double my_x = coor[0];
     vector<double> coor_tmp(std::next(coor.begin()), coor.end());
 
-    vector<int> neighbors;
+    array<int, 4> neighbors;
+    int n_nbr;
     switch (order) {
       case 1:
-        neighbors = find_neighbors2(node->xs, my_x);
+        n_nbr = find_neighbors2(node->xs, my_x, neighbors);
         break;
       case 2:
-        neighbors = find_neighbors3(node->xs, my_x);
+        n_nbr = find_neighbors3(node->xs, my_x, neighbors);
         break;
       case 3:
-        neighbors = find_neighbors4(node->xs, my_x);
+        n_nbr = find_neighbors4(node->xs, my_x, neighbors);
         break;
       default:
         QMException("Invalid order for interpolate . Choose from 1, 2, and 3");
         break;
     }
 
-    vector<double> xs(4);
-    vector<vector<double>> ys(4);
-    for (size_t i = 0; i < neighbors.size(); i++) {
+    array<double, 4> xs;
+    array<data_t, 4> ys;
+    for (size_t i = 0; i < n_nbr; i++) {
       xs[i] = node->xs[neighbors[i]];
       ys[i] = interpolate_help(coor_tmp, node->next[neighbors[i]], order);
     }
 
-    vector<double> my_y = interp_1D(xs, ys, my_x, neighbors.size());
+    data_t my_y = interp_1D(xs, ys, my_x, n_nbr);
     return my_y;
   }
 
   // Two points for linear interpolation
-  vector<int> find_neighbors2(const vector<double>& xs, double my_x) {
+  int find_neighbors2(const vector<double>& xs, double my_x, array<int, 4>& neighbors) {
     int n = xs.size();
     if (n <= 2) {
-      return common::range(n);
+      for (int i = 0; i < n; i++) {
+        neighbors[i] = i;
+      }
+      return n;
     }
 
     int idx = 1;
@@ -243,14 +250,20 @@ class Grid {
     if (idx == n) {
       QMException("X value out of range");
     }
-    return {idx - 1, idx};
+    neighbors[0] = idx - 1;
+    neighbors[1] = idx;
+    //neighbors = {idx - 1, idx};
+    return 2;
   }
 
   // Three points for linear interpolation
-  vector<int> find_neighbors3(const vector<double>& xs, double my_x) {
+  int find_neighbors3(const vector<double>& xs, double my_x, array<int, 4>& neighbors) {
     int n = xs.size();
     if (n <= 3) {
-      return common::range(n);
+      for (int i = 0; i < n; i++) {
+        neighbors[i] = i;
+      }
+      return n;
     }
 
     int idx = 1;
@@ -262,20 +275,27 @@ class Grid {
     if (idx == n) {
       QMException("X value out of range");
     }
-    if (idx < 2) {
-      return {idx - 1, idx, idx + 1};
-    }
     if (idx > n - 2) {
-      return {idx - 2, idx - 1, idx};
+      neighbors[0] = idx - 2;
+      neighbors[1] = idx - 1;
+      neighbors[2] = idx;
     }
-    return {idx - 1, idx, idx + 1};
+    else {
+    neighbors[0] = idx - 1;
+    neighbors[1] = idx;
+    neighbors[2] = idx + 1;
+    return 3;
+    }
   }
 
   // Four points for linear interpolation
-  vector<int> find_neighbors4(const vector<double>& xs, double my_x) {
+  int find_neighbors4(const vector<double>& xs, double my_x, array<int, 4>& neighbors) {
     int n = xs.size();
     if (n < 4) {
-      return common::range(n);
+      for (int i = 0; i < n; i++) {
+        neighbors[i] = i;
+      }
+      return n;
     }
 
     int idx = 1;
@@ -288,25 +308,35 @@ class Grid {
       QMException("X value out of range");
     }
     if (idx == 1) {
-      return {0, 1, 2};
+      neighbors[0] = 0;
+      neighbors[1] = 1;
+      neighbors[2] = 2;
+      return 3;
     }
     if (idx == n - 1) {
-      return {n - 3, n - 2, n - 1};
+      neighbors[0] = n - 3;
+      neighbors[1] = n - 2;
+      neighbors[2] = n - 1;
+      return 3;
     }
-    return {idx - 2, idx - 1, idx, idx + 1};
+    neighbors[0] = idx - 2;
+    neighbors[1] = idx - 1;
+    neighbors[2] = idx;
+    neighbors[3] = idx + 1;
+    return 4;
   }
 
-  vector<double> interp_1D(const vector<double>& xs,
-                           const vector<vector<double>>& ys, double my_x,
+  data_t interp_1D(const array<double, 4>& xs,
+                           const array<data_t, 4>& ys, double my_x,
                            size_t size) {
     if (size == 1) return ys[0];
     if (size == 2) {
       double x0 = xs[0], x1 = xs[1];
-      const vector<double>& y0 = ys[0];
-      const vector<double>& y1 = ys[1];
+      const data_t y0 = ys[0];
+      const data_t y1 = ys[1];
       double x01 = x1 - x0;
       double m0 = my_x - x0;
-      vector<double> rst(7);
+      data_t rst;
       for (size_t i = 0; i < 7; i++) {
         rst[i] = y0[i] + m0 * (y1[i] - y0[i]) / x01;
       }
@@ -314,10 +344,10 @@ class Grid {
     }
     if (size == 3) {
       double x0 = xs[0], x1 = xs[1], x2 = xs[2];
-      const vector<double>& y0 = ys[0];
-      const vector<double>& y1 = ys[1];
-      const vector<double>& y2 = ys[2];
-      vector<double> rst(7);
+      const data_t y0 = ys[0];
+      const data_t y1 = ys[1];
+      const data_t y2 = ys[2];
+      data_t rst;
       double x01 = x1 - x0;
       double x02 = x2 - x0;
       double x12 = x2 - x1;
@@ -334,11 +364,11 @@ class Grid {
 
     if (size == 4) {
       double x0 = xs[0], x1 = xs[1], x2 = xs[2], x3 = xs[3];
-      const vector<double>& y0 = ys[0];
-      const vector<double>& y1 = ys[1];
-      const vector<double>& y2 = ys[2];
-      const vector<double>& y3 = ys[3];
-      vector<double> rst(7);
+      const data_t y0 = ys[0];
+      const data_t y1 = ys[1];
+      const data_t y2 = ys[2];
+      const data_t y3 = ys[3];
+      data_t rst;
       double x01 = x1 - x0;
       double x02 = x2 - x0;
       double x03 = x3 - x0;
