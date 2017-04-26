@@ -104,10 +104,10 @@ int main(int argc, char* argv[]) {
         strcmp(entity->d_name + len - 4, ".inp") == 0) {
       string filename = input_dir + "/" + std::string(entity->d_name);
       auto eft = test_inp(filename, calculator);
-      fprintf(fp_energy_out, "%s %12.7f", filename.c_str(), eft[0]);
-      fprintf(fp_force_out, "%s %12.7f %12.7f %12.7f", filename.c_str(), eft[1], eft[2],
+      fprintf(fp_energy_out, "%s %12.7f\n", filename.c_str(), eft[0]);
+      fprintf(fp_force_out, "%s %12.7f %12.7f %12.7f\n", filename.c_str(), eft[1], eft[2],
               eft[3]);
-      fprintf(fp_torque_out, "%s %12.7f %12.7f %12.7f", filename.c_str(), eft[4], eft[5],
+      fprintf(fp_torque_out, "%s %12.7f %12.7f %12.7f\n", filename.c_str(), eft[4], eft[5],
               eft[6]);
     }
 
