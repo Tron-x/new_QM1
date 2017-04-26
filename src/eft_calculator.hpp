@@ -150,7 +150,7 @@ class EFTCalculator {
     // energy -> 0
     // force -> 1:4
     // torque -> 4:7
-    vector<double> res = m_grid.interpolate(coor, m_order);
+    data_t res = m_grid.interpolate(coor, m_order);
 
     double energy = res[0];
     vector<double> force(res.begin() + 1, res.begin()+4);
@@ -168,12 +168,7 @@ class EFTCalculator {
       new_force.push_back(common::dot(force, item));
       new_torque.push_back(common::dot(torque, item));
     }
-
-    res.clear();
-    res.push_back(energy);
-    res.insert(res.end(), new_force.begin(), new_force.end());
-    res.insert(res.end(), new_torque.begin(), new_torque.end());
-    return res;
+    return {energy, new_force[0], new_force[1], new_force[2], new_torque[0], new_torque[1], new_torque[2]};
   }
 
  private:
