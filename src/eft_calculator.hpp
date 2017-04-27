@@ -77,19 +77,21 @@ class Water {
 /**
  * A class that carries the logic of evaluating the energy, force and torque
  * of a pair of rigid molecules. The coordinates of each molecule are given
- * in the form of Xcom and q, with Xcom being the Cartesian coordinates of the
- * center of mass, q being the quaternion representation of its orientation
- * wrt a reference pose. The class evaluates the EFTs for a pair of such
- * coordinates by
- *   1. Apply translational and rotational operations to the pair to align the
+ * in the form of [[OX, OY, OZ], [HX, HY, HZ], [HX, HY, HZ]].The class 
+ * evaluates the EFTs for a pair of water molecules by
+ *   1. Convert the Cartesian coordinates of individual atoms to 
+ *          XCOM - Cartesian coordinates of center of mass
+ *          q - quaternion representing the orientation of the molecule with 
+ *              respect to a reference pose
+ *   2. Apply translational and rotational operations to the pair to align the
  *      COM of the first molecule with the origin and its orientation to the
  *      reference pose.
- *   2. Convert the modified Xcom and q of the second molecule into spherical
+ *   3. Convert the modified Xcom and q of the second molecule into spherical
  *      coordinates.
- *   3. Use the resulted six-dimensional coordinate to query a six-dimensional
+ *   4. Use the resulted six-dimensional coordinate to query a six-dimensional
  *      grid that stores precomputed EFTs.
- *   4. Unapply rotation in step 1 to obtain correctly oriented forces and
- * torques
+ *   5. Unapply rotation in step 1 to obtain correctly oriented forces and
+ *      torques
  */
 class EFTCalculator {
  public:
@@ -114,7 +116,7 @@ class EFTCalculator {
     vector<vector<double>> R1 = m_mol.get_R(coors1);
     vector<double> q1 = tools::R2q(R1);
 
-    //! move COM if mol0 to origin
+    //! move COM of mol0 to origin
     vector<double> X = dot(x_com1 - x_com0, R0);
     vector<double> q = tools::qdiv(q1, q0);
     //! Use mirror symmetry of mol0 to move mol1 such that its COM has positive y and z values
