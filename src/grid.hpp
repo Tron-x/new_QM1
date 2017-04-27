@@ -111,6 +111,7 @@ class Grid {
 
     m_head_node = node_r;
     m_n = node_r->count();
+    std::cout << "The grid consists of "  << m_n << " points" << std::endl;
   }
 
   void load(const char* filename) {
@@ -256,7 +257,7 @@ class Grid {
     return 2;
   }
 
-  // Three points for linear interpolation
+  // Three points for 2nd order interpolation
   int find_neighbors3(const vector<double>& xs, double my_x, array<int, 4>& neighbors) {
     int n = xs.size();
     if (n <= 3) {
@@ -284,11 +285,11 @@ class Grid {
     neighbors[0] = idx - 1;
     neighbors[1] = idx;
     neighbors[2] = idx + 1;
-    return 3;
     }
+    return 3;
   }
 
-  // Four points for linear interpolation
+  // Four points for 3rd order interpolation
   int find_neighbors4(const vector<double>& xs, double my_x, array<int, 4>& neighbors) {
     int n = xs.size();
     if (n < 4) {
