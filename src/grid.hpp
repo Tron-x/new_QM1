@@ -153,12 +153,12 @@ class Grid {
 
       setup();
 
-      gen_leaves_with_x(m_head_node, {}, ifs);
+      fill_grid(m_head_node, ifs);
     }
   }
 
   data_t interpolate(const vector<double>& coor, int order = 2) {
-    return interpolate_help(coor, m_head_node, order);
+    return interpolate_help(coor.begin(), m_head_node, order);
   }
 
   int get_n() const { return m_n; }
@@ -172,8 +172,7 @@ class Grid {
     delete head;
   }
 
-  void gen_leaves_with_x(Node* head, const vector<double>& x,
-                          std::ifstream& ifs) {
+  void fill_grid(Node* head, std::ifstream& ifs) {
     if (head->next.empty()) {
       std::string line;
       std::getline(ifs, line);
@@ -188,21 +187,18 @@ class Grid {
     }
     int idx = 0;
     for (Node* node : head->next) {
-      auto y = x;
-      y.insert(y.end(), head->xs[idx]);
-      gen_leaves_with_x(node, y, ifs);
+      fill_grid(node, ifs);
       idx += 1;
     }
   }
 
-  data_t interpolate_help(const vector<double>& coor, Node* node,
+  data_t interpolate_help(vector<double>::const_iterator icoor, Node* node,
                                   int order = 2) {
     if (node->next.empty()) {
       return node->y;
     }
 
-    double my_x = coor[0];
-    vector<double> coor_tmp(std::next(coor.begin()), coor.end());
+    double my_x = *icoor++;
 
     array<int, 4> neighbors;
     int n_nbr;
@@ -225,7 +221,7 @@ class Grid {
     array<data_t, 4> ys;
     for (size_t i = 0; i < n_nbr; i++) {
       xs[i] = node->xs[neighbors[i]];
-      ys[i] = interpolate_help(coor_tmp, node->next[neighbors[i]], order);
+      ys[i] = interpolate_help(icoor, node->next[neighbors[i]], order);
     }
 
     data_t my_y = interp_1D(xs, ys, my_x, n_nbr);
